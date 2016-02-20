@@ -66,7 +66,9 @@ Please enter validate code: a1b2
 
 That's all. After a while, a file named Course Schedule.ics will be put into the directory you provided.
 
-If you are using OS X, you can double click it or drag it to `Calendar` to import your schedule to iCloud and iCloud will sync it to all the Apple devices you own. If you are using other systems, you need to find a way to import the file to your iPhone or iPad.
+If you are using OS X, you can double click it or drag it to `Calendar` to import your schedule to iCloud and iCloud will sync it to all the Apple devices you own.
+
+You can also import it to Gmail, Microsoft Outlook or other email service that support .ics file import. Then after you logged in these email in your devices, schedule will be synced to calendar app.
 
 ## Development
 
