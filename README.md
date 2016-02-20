@@ -14,6 +14,14 @@ If you just want to use the SHUScheduleGenerator, you can download SHUScheduleGe
 
 [Python](https://www.python.org) 2.7 installation is required. Tested in Python 2.7.11.
 
+Install icalendar and pytz packages.
+
+``` sh
+sudo pip install icalendar pytz
+```
+
+If you haven't installed pip, you can follow the guide [here](https://pip.pypa.io/en/stable/installings/).
+
 ## Usage
 
 Enter the directory containing SHUScheduleGenerator in Terminal(OS X), shell(Linux) or cmd(Windows)
