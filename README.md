@@ -20,7 +20,7 @@ Install icalendar and pytz packages.
 sudo pip install icalendar pytz
 ```
 
-If you haven't installed pip, you can follow the guide [here](https://pip.pypa.io/en/stable/installings/).
+If you haven't installed pip, you can follow the guide [here](https://pip.pypa.io/).
 
 ## Usage
 
