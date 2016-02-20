@@ -28,13 +28,13 @@ run SHUScheduleGenerator.py
 python SHUScheduleGenerator.py
 ```
 
-Entry the date of the first day of the term. For example, the first day of autumn term in year 2015 is August 31, so you entry (`2015.08.31`) and press Enter
+Entry the date of the first day of the term. For example, the first day of autumn term in year 2015 is August 31, so you entry `2015.08.31` and press Enter
 
 ``` sh
 Starting Date: 2015.08.31
 ```
 
-Entry the directory where you receive validate code image and result .ics file. For example, if you are using OS X, you can entry (`/Users/YourUserName/Desktop`) which set the directory to your desktop
+Entry the directory where you receive validate code image and result .ics file. For example, if you are using OS X, you can entry `/Users/YourUserName/Desktop` which set the directory to your desktop
 
 ``` sh
 Directory: /Users/YourUserName/Desktop
@@ -44,13 +44,13 @@ Entry your student ID and password
 
 ``` sh
 student ID: xxxxxxxx
-password: 
+password:
 ```
 
 student ID is the ID of every student in Shanghai University.
 Note: when you entry the password, the password won't display on screen. Don't worry, just keep typing.
 
-At this time, a image named (`Validate Code Image.jpg`) will appear in the directory you entried earier. You need to recognize it and type it in.
+At this time, a image named `Validate Code Image.jpg` will appear in the directory you entried earier. You need to recognize it and type it in.
 
 ``` sh
 Please enter validate code: a1b2
@@ -58,7 +58,7 @@ Please enter validate code: a1b2
 
 That's all. After a while, a file named Course Schedule.ics will be put into the directory you provided.
 
-If you are using OS X, you can double click it or drag it to (`Calendar`) to import your schedule to iCloud and iCloud will sync it to all the Apple devices you own. If you are using other systems, you need to find a way to import the file to your iPhone or iPad.
+If you are using OS X, you can double click it or drag it to `Calendar` to import your schedule to iCloud and iCloud will sync it to all the Apple devices you own. If you are using other systems, you need to find a way to import the file to your iPhone or iPad.
 
 ## Development
 
