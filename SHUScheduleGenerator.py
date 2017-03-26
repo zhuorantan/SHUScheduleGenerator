@@ -1,233 +1,206 @@
 # -*- coding: utf-8 -*-
-import urllib, urllib2, cookielib, os, re, getpass, datetime, pytz, icalendar
+import os
+import datetime
+import pytz
+import urllib
+import urllib2
+import cookielib
+import re
+import icalendar
+import getpass
 
-def init_calendar():
-    # Initialize the icalendar.
-    global cal
-    cal = icalendar.Calendar()
-    cal.add("calscale", "GREGORIAN")
-    cal.add("version", "2.0")
-    cal.add("X-WR-CALNAME", "Course Schedule")
-    cal.add("X-WR-TIMEZONE", "Asia/Shanghai")
 
-def init_time_table(starting_date):
-    global weekday_table, course_time_table
+class Course:
+    __course_time_table = (datetime.time(8, 00, tzinfo=pytz.timezone("Asia/Shanghai")),
+                           datetime.time(8, 55, tzinfo=pytz.timezone("Asia/Shanghai")),
+                           datetime.time(10, 00, tzinfo=pytz.timezone("Asia/Shanghai")),
+                           datetime.time(10, 55, tzinfo=pytz.timezone("Asia/Shanghai")),
+                           datetime.time(12, 10, tzinfo=pytz.timezone("Asia/Shanghai")),
+                           datetime.time(13, 05, tzinfo=pytz.timezone("Asia/Shanghai")),
+                           datetime.time(14, 10, tzinfo=pytz.timezone("Asia/Shanghai")),
+                           datetime.time(15, 05, tzinfo=pytz.timezone("Asia/Shanghai")),
+                           datetime.time(16, 00, tzinfo=pytz.timezone("Asia/Shanghai")),
+                           datetime.time(16, 55, tzinfo=pytz.timezone("Asia/Shanghai")),
+                           datetime.time(18, 00, tzinfo=pytz.timezone("Asia/Shanghai")),
+                           datetime.time(18, 55, tzinfo=pytz.timezone("Asia/Shanghai")),
+                           datetime.time(19, 50, tzinfo=pytz.timezone("Asia/Shanghai")))
 
-    # Convert Chinese number to weekday represented by date.
-    monday = datetime.datetime.strptime(starting_date, "%Y.%m.%d").date()
-    tuesday = monday + datetime.timedelta(1)
-    wednesday = tuesday + datetime.timedelta(1)
-    thursday = wednesday + datetime.timedelta(1)
-    friday = thursday + datetime.timedelta(1)
-    weekday_table = {"一": monday, "二": tuesday, "三": wednesday, "四": thursday, "五": friday}
+    def __init__(self, name, occur_time_str, teacher, course_id, credit, location, office_time_str, office):
+        self.name = name
+        self.location = location
+        self.__occur_time_str = occur_time_str
+        self.description = 'Teacher: ' + teacher + \
+                           "\nCourse ID: " + course_id + \
+                           "\nCredit: " + credit +\
+                           "\nOffice Time: " + office_time_str +\
+                           "\nOffice: " + office
 
-    # Create a table containing the occur time of courses in a day.
-    course_time_table = []
-    course_time_table.append(datetime.time(8, 00, tzinfo=pytz.timezone("Asia/Shanghai")))
-    course_time_table.append(datetime.time(8, 55, tzinfo=pytz.timezone("Asia/Shanghai")))
-    course_time_table.append(datetime.time(10, 00, tzinfo=pytz.timezone("Asia/Shanghai")))
-    course_time_table.append(datetime.time(10, 55, tzinfo=pytz.timezone("Asia/Shanghai")))
-    course_time_table.append(datetime.time(12, 10, tzinfo=pytz.timezone("Asia/Shanghai")))
-    course_time_table.append(datetime.time(13, 05, tzinfo=pytz.timezone("Asia/Shanghai")))
-    course_time_table.append(datetime.time(14, 10, tzinfo=pytz.timezone("Asia/Shanghai")))
-    course_time_table.append(datetime.time(15, 05, tzinfo=pytz.timezone("Asia/Shanghai")))
-    course_time_table.append(datetime.time(16, 00, tzinfo=pytz.timezone("Asia/Shanghai")))
-    course_time_table.append(datetime.time(16, 55, tzinfo=pytz.timezone("Asia/Shanghai")))
-    course_time_table.append(datetime.time(18, 00, tzinfo=pytz.timezone("Asia/Shanghai")))
-    course_time_table.append(datetime.time(18, 55, tzinfo=pytz.timezone("Asia/Shanghai")))
-    course_time_table.append(datetime.time(19, 50, tzinfo=pytz.timezone("Asia/Shanghai")))
+    def __get_occur_weeks(self):
+        search = re.search(r'\((.+?)周(.*?)\)', self.__occur_time_str)
+        if search:
+            match = search.group(1)
+            weeks = re.findall(r'[0-9]+', match)
+            if '-' in match:
+                start_week = int(weeks[0])
+                end_week = int(weeks[1])
+                return list(range(start_week, end_week + 1))
+            elif ',' in match or '第' in match:
+                return [int(i) for i in weeks]
+        else:
+            return list(range(1, 11))
 
-def login(studentNo, password, directory):
+    def __get_occur_indexes(self, weekday_table):
+        # Get a list of occur time.
+        occur_indexes = []
+        for split_time_string in self.__occur_time_str.split():
+            try:
+                weekday = weekday_table[split_time_string[:3]]
+            except:
+                continue
 
-    def get_validate_code(validate_URL, directory):
-        # Request validate code image and write to the directory provided.
-        validate_code_image = opener.open(validate_URL).read()
-        f = open(os.path.join(directory, "Validate Code Image.jpg"), "wb")
-        f.write(validate_code_image)
-        f.close()
-        # Return the validate code fetched from user's input.
-        return raw_input("Please enter validate code: ")
+            match = re.findall(r'[0-9]+', split_time_string)
+            start_index = int(match[0]) - 1
+            end_index = int(match[1]) - 1
 
-    # These are the URLs used to login.
-    login_URL = "http://xk.autoisp.shu.edu.cn"
-    validate_URL = "http://xk.autoisp.shu.edu.cn/Login/GetValidateCode?%20%20+%20GetTimestamp"
+            occur_index = []
+            for i in range(start_index, end_index + 1):
+                course_index = self.__course_time_table[i]
+                occur_index.append(datetime.datetime.combine(weekday, course_index))
+            occur_indexes.append(occur_index)
 
-    # Create a opener with the ability to record cookies.
-    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.CookieJar()))
+        return occur_indexes
 
-    # Get validate code and post the information to login.
-    validate_code = get_validate_code(validate_URL, directory)
-    login_data = urllib.urlencode({"txtUserName": studentNo, "txtPassword": password, "txtValiCode": validate_code})
-    opener.open(login_URL, login_data)
-    return opener
-
-def get_data(opener, studentNo):
-    # This is the URL where the source of schedule come from.
-    course_table_URL = "http://xk.autoisp.shu.edu.cn/StudentQuery/CtrlViewQueryCourseTable"
-    # Create the request to get the raw data of schedule.
-    request = urllib2.Request(course_table_URL, urllib.urlencode({"studentNo": studentNo}))
-
-    # Get and return the raw data.
-    data = opener.open(request).read()
-    return data
-
-def get_course_list(data):
-    # First extract data from HTML.
-    initial_data = re.findall(r"<tr>(.+?)</tr>", data, re.S)
-
-    # Create a list of a list of course info.
-    course_list = []
-    for extracted_data in initial_data:
-        items = re.findall(r"<td>(.*?)</td>", extracted_data, re.S)
-        course = []
-        for item in items:
-            course.append(item.strip())
-        if len(course) == 11:
-            course_list.append(course)
-    return course_list
-
-def get_occur_time_list(time_string):
-    # Get a list of occur time.
-    occur_time_list = []
-    for splitted_time_string in time_string.split():
-        occur_weeks = get_occur_weeks(splitted_time_string)
-        start_week = occur_weeks[0]
-        try:
-            # If the string is similar to 四3-4, then use [:3] to get the first Chinese character of the string which forms the index of weekday.
-            start_date = weekday_table[splitted_time_string[:3]] + datetime.timedelta(weeks = start_week - 1)
-        except:
-            # The splitted_time_string can be something other than a string indicating time, maybe "男生篮球(基础)".
-            start_date += datetime.timedelta(weeks = start_week - 1)
-            # If splitted_time_string is something like "男生篮球(基础)", then the same time will be added again, so delete the time appended last time.
-            del occur_time_list[-1]
-
-        # If possible, get the index of the course in a day.
-        if get_occur_index(splitted_time_string):
-            start_index, end_index = get_occur_index(splitted_time_string)
-        # Get the time according to the index.
-        course_time_list = course_time_table[start_index - 1: end_index]
-
-        # Combine time and date.
-        course_dates = []
-        for time in course_time_list:
-            course_dates.append(datetime.datetime.combine(start_date, time))
-
-        occur_time_list.append((course_dates, occur_weeks))
-    return occur_time_list
-
-def get_occur_weeks(time_string):
-    # The most common time_string that include occur weeek are something like "四7-8 (1,6周)".
-    weeks = re.findall(r"\((.+?)周\)", time_string)
-    if not weeks:
-        # There are some that use Chinese full width parenthese.
-        weeks = re.findall(r"（(.+?)周）", time_string)
-
-    # Some indicate odd or even weeks.
-    if not weeks:
-        try:
-            weeks = [re.search(r"(.+?)单", time_string).group()[-3:]]
-        except:
-            pass
-    if not weeks:
-        try:
-            weeks = [re.search(r"(.+?)双", time_string).group()[-3:]]
-        except:
-            pass
-    try:
-        week = weeks[0]
-        if "-" in week:
-            # If there is a "-" in the string, it means from start_week to end_week.
-            start_week = int(week[0])
-            end_week = int(week[2:])
-            return list(range(start_week, end_week + 1))
-        elif "," in week:
-            # If there is a "," in the string, it means weekA and weekB.
-            repeat_weeks = []
-            for week_index in week.split(","):
-                repeat_weeks.append(int(week_index))
-            return repeat_weeks
-        elif "单" in week:
-            return [1, 3, 5, 7, 9]
-        elif "双" in week:
-            return [2, 4, 6, 8, 10]
-    except:
-        # Most courses don't include occur week which means every week in the term.
-        return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-
-def get_occur_index(time_string):
-    course_index_string = re.sub(r"\((.+?)\)", "", time_string[3:])
-    is_start = True
-    start_index = 0
-    end_index = 0
-    for course_index in course_index_string:
-        try:
-            if is_start:
-                start_index = start_index * 10 + int(course_index)
-            else:
-                end_index = end_index * 10 + int(course_index)
-        except:
-            if course_index == "-":
-                is_start = False
-    if start_index and end_index:
-        return (start_index, end_index)
-
-def process_course_list(course_list):
-    processed_course_list = []
-    for course in course_list:
-        # Get following information from course_list.
-        name = course[2]
-        location = course[7]
-        occur_time_list = get_occur_time_list(course[6])
-        description = "教师: " + course[4] + "\n课程号: " + course[1] + "\n学分: " + course[5] + "\n答疑时间: " + course[9] + "\n答疑地点: " + course[10]
-        processed_course_list.append((name, location, occur_time_list, description))
-    return processed_course_list
-
-def create_events(course_list):
-    def create_alarm():
+    def get_events(self, weekday_table):
         # Create a alarm which will notify user 20 minutes before the occur time.
         alarm = icalendar.Alarm()
         alarm.add("action", "DISPLAY")
-        alarm.add("trigger", datetime.timedelta(minutes = -20))
+        alarm.add("trigger", datetime.timedelta(minutes=-20))
         alarm.add("description", "Event reminder")
-        return alarm
 
-    def get_event(name, location, occur_time, description, rrule):
-        # Create an calendar event with above information.
-        event = icalendar.Event()
-        event.add("summary", name)
-        event.add("dtstart", occur_time)
-        event.add("duration", datetime.timedelta(minutes = 45))
-        event.add("location", location)
-        event.add("description", description)
-        event.add("rrule", rrule)
-        return event
+        weeks = self.__get_occur_weeks()
+        indexes = self.__get_occur_indexes(weekday_table)
 
-    alarm = create_alarm()
-    for course in course_list:
-        for occur_time_list in course[2]:
-            is_first = True
-            occur_weeks = occur_time_list[1]
-            count = len(occur_weeks)
-            # interval is the number of weeks between two occur time. If the course occurs every week, then the interval is 1.
-            interval = occur_weeks[1] - occur_weeks[0]
-            for occur_time in occur_time_list[0]:
-                rrule = {"freq": "weekly", "count": count, "interval": interval}
-                event = get_event(course[0], course[1], occur_time, course[3], rrule)
+        events = []
+        for index in indexes:
+            for time in index:
+                event = icalendar.Event()
+                event.add('summary', self.name)
+                event.add('dtstart', time + + datetime.timedelta(weeks=weeks[0] - 1))
+                event.add('duration', datetime.timedelta(minutes=45))
+                event.add('location', self.location)
+                event.add('description', self.description)
 
-                # Most courses have two teaching periods, the alarm only notify before the first teaching period.
-                if is_first:
+                if len(weeks) > 1:
+                    interval = weeks[1] - weeks[0]
+                    repeat_rule = {"freq": "weekly", "count": len(weeks), "interval": interval}
+                    event.add('rrule', repeat_rule)
+
+                if time == index[0]:
                     event.add_component(alarm)
-                    is_first = False
-                cal.add_component(event)
+
+                events.append(event)
+
+        return events
 
 
+class SHUScheduleGenerator:
 
-#-------- Program Interface ------------------
+    def __init__(self, begin_date_str):
+        """
+
+        :rtype: SHUScheduleGenerator
+        :type begin_date_str: str
+        """
+        assert isinstance(begin_date_str, str)
+
+        self.__base_url = 'http://xk.autoisp.shu.edu.cn:8080'
+
+        # Convert Chinese number to weekday represented by date.
+        monday = datetime.datetime.strptime(begin_date_str, '%Y.%m.%d').date()
+        tuesday = monday + datetime.timedelta(1)
+        wednesday = tuesday + datetime.timedelta(1)
+        thursday = wednesday + datetime.timedelta(1)
+        friday = thursday + datetime.timedelta(1)
+        self.__weekday_table = {'一': monday, '二': tuesday, '三': wednesday, '四': thursday, '五': friday}
+
+        # Create a opener with the ability to record cookies.
+        self.__opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.CookieJar()))
+
+        self.__validate_img_path = os.path.join(os.getcwd(), "validate_code.jpg")
+
+    def fetch_validate_code(self):
+        validate_img_url = self.__base_url + '/Login/GetValidateCode?%20%20+%20GetTimestamp'
+        validate_code_image = self.__opener.open(validate_img_url).read()
+
+        # Request validate code image and write to the directory provided.
+        f = open(self.__validate_img_path, "wb")
+        f.write(validate_code_image)
+        f.close()
+
+        os.system('open \'' + self.__validate_img_path + '\'')
+
+    def delete_validate_code_file(self):
+        os.remove(self.__validate_img_path)
+
+    def auth(self, student_id, password, validate_code):
+        login_data = urllib.urlencode({"txtUserName": student_id, "txtPassword": password, "txtValiCode": validate_code})
+        self.__opener.open(self.__base_url, login_data)
+
+    def generate(self, student_id):
+        # This is the URL where the source of schedule come from.
+        course_table_url = self.__base_url + '/StudentQuery/CtrlViewQueryCourseTable'
+        # Create the request to get the raw data of schedule.
+        request = urllib2.Request(course_table_url, urllib.urlencode({"studentNo": student_id}))
+
+        # Get and return the raw data.
+        data = self.__opener.open(request).read()
+
+        # First extract data from HTML.
+        initial_data = re.findall(r"<tr>(.+?)</tr>", data, re.S)
+
+        # Create a list of a list of course info.
+        course_list = []
+        for extracted_data in initial_data:
+            items = re.findall(r"<td>(.*?)</td>", extracted_data, re.S)
+            course_items = []
+            for item in items:
+                course_items.append(item.strip())
+            if len(course_items) == 11:
+                course = Course(course_items[2],
+                                course_items[6],
+                                course_items[4],
+                                course_items[1],
+                                course_items[5],
+                                course_items[7],
+                                course_items[9],
+                                course_items[10])
+                course_list.append(course)
+
+        events = []
+        for course in course_list:
+            events += course.get_events(self.__weekday_table)
+
+        cal = icalendar.Calendar()
+        cal.add("calscale", "GREGORIAN")
+        cal.add("version", "2.0")
+        cal.add("X-WR-CALNAME", "Course Schedule")
+        cal.add("X-WR-TIMEZONE", "Asia/Shanghai")
+
+        for event in events:
+            cal.add_component(event)
+
+        cal_path = os.path.join(os.getcwd(), "Course Schedule.ics")
+        f = open(cal_path, "wb")
+        f.write(cal.to_ical())
+        os.system('open \'' + cal_path + '\'')
+
+
+# -------- Program Interface ------------------
 print u"""#---------------------------------------
-#   Program:  SHUCouseSchedule
-#   Version:  2.1
+#   Program:  SHUCourseSchedule
+#   Version:  3.0
 #   Author:   Jerome Tan
-#   Date:     2015.11.5
+#   Date:     2017.3.26
 #   Language: Python 2.7
 #---------------------------------------
 """
@@ -235,33 +208,19 @@ print u"""#---------------------------------------
 # starting_date is the date of the first of day in the term.
 print """Please enter the starting date of your courses according to the following format:
 yyyy.mm.dd"""
-starting_date = raw_input("Starting Date: ")
+begin_date_str = raw_input("Starting Date: ")
 
-# This directory will be used to store validate code image and output the .ics file.
-print "Please enter the directory where you want to save your course table"
-directory = raw_input("Directory: ")
+generator = SHUScheduleGenerator(begin_date_str=begin_date_str)
 
 print "Please enter your student ID and your password"
-studentNo = raw_input("student ID: ")
+student_id = raw_input("Student ID: ")
 password = getpass.getpass("Password: ")
 
-# Login and get the URL opener with login information.
-opener = login(studentNo, password, directory)
-# Get raw data.
-data = get_data(opener, studentNo)
+generator.fetch_validate_code()
 
-# Initialize calendar and time table.
-init_calendar()
-init_time_table(starting_date)
+print "Please enter the validate code"
+validate_code = raw_input("Validate code: ")
 
-# Abstract course list from raw HTML.
-course_list = get_course_list(data)
-# Process the data abstracted from raw HTML.
-processed_course_list = process_course_list(course_list)
-# Create calendar events.
-create_events(processed_course_list)
-
-# Write the .ics file to the directory provided by user.
-f = open(os.path.join(directory, "Course Schedule.ics"), "wb")
-f.write(cal.to_ical())
-f.close()
+generator.auth(student_id, password, validate_code)
+generator.generate(student_id)
+generator.delete_validate_code_file()
