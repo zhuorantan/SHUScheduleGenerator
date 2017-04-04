@@ -1,5 +1,5 @@
-import icalendar
 import re
+from icalendar import Event, Alarm
 from datetime import datetime, timedelta
 
 
@@ -59,7 +59,7 @@ class Course:
 
     def get_events(self, weekday_table, course_time_table):
         # Create a alarm which will notify user 20 minutes before the occur time.
-        alarm = icalendar.Alarm()
+        alarm = Alarm()
         alarm.add(name='action', value='DISPLAY')
         alarm.add(name='trigger', value=timedelta(minutes=-20))
         alarm.add(name='description', value='Event reminder')
@@ -75,7 +75,7 @@ class Course:
         events = []
         for occur_time_list_in_a_day in occur_time_list:
             for occur_time in occur_time_list_in_a_day:
-                event = icalendar.Event()
+                event = Event()
                 event.add(name='summary', value=self.name)
                 event.add(name='dtstart', value=occur_time + timedelta(weeks=occur_weeks[0] - 1))
                 event.add(name='duration', value=timedelta(minutes=45))
