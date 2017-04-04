@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import os
 import datetime
 import re
@@ -8,6 +7,7 @@ from urllib.parse import urlencode
 from urllib.request import build_opener, HTTPCookieProcessor, Request
 from http.cookiejar import CookieJar
 from pytz import timezone
+from Course import Course
 
 
 course_time_table = (datetime.time(hour=8, minute=0, tzinfo=timezone("Asia/Shanghai")),
@@ -23,86 +23,6 @@ course_time_table = (datetime.time(hour=8, minute=0, tzinfo=timezone("Asia/Shang
                      datetime.time(hour=18, minute=0, tzinfo=timezone("Asia/Shanghai")),
                      datetime.time(hour=18, minute=55, tzinfo=timezone("Asia/Shanghai")),
                      datetime.time(hour=19, minute=50, tzinfo=timezone("Asia/Shanghai")))
-
-
-class Course:
-
-    def __init__(self, name, occur_time_str, teacher, course_id, credit, location, office_time_str, office):
-        self.name = name
-        self.location = location
-        self.__occur_time_str = occur_time_str
-        self.description = 'Teacher: ' + teacher + \
-                           "\nCourse ID: " + course_id + \
-                           "\nCredit: " + credit +\
-                           "\nOffice Time: " + office_time_str +\
-                           "\nOffice: " + office
-
-    def __get_occur_weeks(self):
-        search = re.search(r'\((.+?)周(.*?)\)', self.__occur_time_str)
-        if search:
-            match = search.group(1)
-            weeks = re.findall(r'[0-9]+', match)
-            if '-' in match:
-                start_week = int(weeks[0])
-                end_week = int(weeks[1])
-                return list(range(start_week, end_week + 1))
-            elif ',' in match or '第' in match:
-                return [int(i) for i in weeks]
-        else:
-            return list(range(1, 11))
-
-    def __get_occur_indexes(self, weekday_table):
-        # Get a list of occur time.
-        occur_indexes = []
-        for split_time_string in self.__occur_time_str.split():
-            try:
-                weekday = weekday_table[split_time_string[:3]]
-            except:
-                continue
-
-            match = re.findall(r'[0-9]+', split_time_string)
-            start_index = int(match[0]) - 1
-            end_index = int(match[1]) - 1
-
-            occur_index = []
-            for i in range(start_index, end_index + 1):
-                course_index = course_time_table[i]
-                occur_index.append(datetime.datetime.combine(weekday, course_index))
-            occur_indexes.append(occur_index)
-
-        return occur_indexes
-
-    def get_events(self, weekday_table):
-        # Create a alarm which will notify user 20 minutes before the occur time.
-        alarm = icalendar.Alarm()
-        alarm.add("action", "DISPLAY")
-        alarm.add("trigger", datetime.timedelta(minutes=-20))
-        alarm.add("description", "Event reminder")
-
-        weeks = self.__get_occur_weeks()
-        indexes = self.__get_occur_indexes(weekday_table)
-
-        events = []
-        for index in indexes:
-            for time in index:
-                event = icalendar.Event()
-                event.add('summary', self.name)
-                event.add('dtstart', time + + datetime.timedelta(weeks=weeks[0] - 1))
-                event.add('duration', datetime.timedelta(minutes=45))
-                event.add('location', self.location)
-                event.add('description', self.description)
-
-                if len(weeks) > 1:
-                    interval = weeks[1] - weeks[0]
-                    repeat_rule = {"freq": "weekly", "count": len(weeks), "interval": interval}
-                    event.add('rrule', repeat_rule)
-
-                if time == index[0]:
-                    event.add_component(alarm)
-
-                events.append(event)
-
-        return events
 
 
 class SHUScheduleGenerator:
@@ -179,7 +99,7 @@ class SHUScheduleGenerator:
 
         events = []
         for course in course_list:
-            events += course.get_events(self.__weekday_table)
+            events += course.get_events(self.__weekday_table, course_time_table)
 
         cal = icalendar.Calendar()
         cal.add("calscale", "GREGORIAN")
