@@ -11,8 +11,8 @@ from course import Course
 
 class Generator:
 
-    def __init__(self, begin_date_str, port):
-        self.__base_url = 'http://xk.autoisp.shu.edu.cn:%d' % port
+    def __init__(self, begin_date_str):
+        self.__base_url = "http://xk.autoisp.shu.edu.cn"
 
         monday = datetime.strptime(begin_date_str, '%Y.%m.%d').date()
         tuesday = monday + timedelta(days=1)
@@ -40,8 +40,26 @@ class Generator:
 
         self.__validate_img_path = os.path.join(os.getcwd(), "validate_code.jpg")
 
+        self.term_index = 0
+        self.terms_and_ports = []
+
+        ports = (80, 8080)
+        for port in ports:
+            url = '%s:%d' % (self.__base_url, port)
+            data = self.__opener.open(url).read().decode('utf-8')
+            term = re.search(pattern=r'<div style="color: Red; font-size: 26px; text-align: center;">(.+?)</div>',
+                             string=data).group(1)
+            self.terms_and_ports.append((term, port))
+
+    def __get_url(self):
+        port = self.terms_and_ports[self.term_index][1]
+        return '%s:%d' % (self.__base_url, port)
+
+    def get_terms(self):
+        return [term_and_port[0] for term_and_port in self.terms_and_ports]
+
     def fetch_validate_code(self):
-        validate_img_url = self.__base_url + "/Login/GetValidateCode?%20%20+%20GetTimestamp"
+        validate_img_url = self.__get_url() + "/Login/GetValidateCode?%20%20+%20GetTimestamp"
         validate_code_image = self.__opener.open(validate_img_url).read()
 
         # Request validate code image and write to the directory provided.
@@ -60,11 +78,11 @@ class Generator:
         login_data = urlencode({'txtUserName': student_id,
                                 'txtPassword': password,
                                 'txtValiCode': validate_code}).encode('utf-8')
-        self.__opener.open(fullurl=self.__base_url, data=login_data)
+        self.__opener.open(fullurl=self.__get_url(), data=login_data)
 
     def generate(self, student_id):
         # This is the URL where the source of schedule come from.
-        course_table_url = self.__base_url + "/StudentQuery/CtrlViewQueryCourseTable"
+        course_table_url = self.__get_url() + "/StudentQuery/CtrlViewQueryCourseTable"
         # Create the request to get the raw data of schedule.
         request = Request(url=course_table_url, data=urlencode({'studentNo': student_id}).encode('utf-8'))
 

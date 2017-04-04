@@ -3,7 +3,7 @@ from generator import Generator
 
 
 print(u"""#---------------------------------------
-#   Program:  SHUCourseSchedule
+#   Program:  SHUScheduleGenerator
 #   Version:  3.0
 #   Author:   Jerome
 #   Date:     2017.4.4
@@ -15,10 +15,15 @@ print(u"""#---------------------------------------
 print("Entry the starting date of your courses in the following format:\nyyyy.mm.dd")
 begin_date = input("Starting Date: ")
 
-print("Input the port to get course table")
-port = int(input("Port: "))
+generator = Generator(begin_date_str=begin_date)
 
-generator = Generator(begin_date_str=begin_date, port=port)
+print("Choose the term")
+for index, term in enumerate(generator.get_terms()):
+    print('%d. %s' % (index + 1, term))
+
+term_index = int(input("Term: ")) - 1
+generator.term_index = term_index
+print(generator.term_index)
 
 print("Enter student ID and password")
 student_id = input("Student ID: ")
