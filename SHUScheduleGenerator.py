@@ -1,29 +1,31 @@
 # -*- coding: utf-8 -*-
 import os
 import datetime
-import pytz
-import urllib
-import urllib2
-import cookielib
 import re
 import icalendar
 import getpass
+from urllib.parse import urlencode
+from urllib.request import build_opener, HTTPCookieProcessor, Request
+from http.cookiejar import CookieJar
+from pytz import timezone
+
+
+course_time_table = (datetime.time(hour=8, minute=0, tzinfo=timezone("Asia/Shanghai")),
+                     datetime.time(hour=8, minute=55, tzinfo=timezone("Asia/Shanghai")),
+                     datetime.time(hour=10, minute=0, tzinfo=timezone("Asia/Shanghai")),
+                     datetime.time(hour=10, minute=55, tzinfo=timezone("Asia/Shanghai")),
+                     datetime.time(hour=12, minute=10, tzinfo=timezone("Asia/Shanghai")),
+                     datetime.time(hour=13, minute=5, tzinfo=timezone("Asia/Shanghai")),
+                     datetime.time(hour=14, minute=10, tzinfo=timezone("Asia/Shanghai")),
+                     datetime.time(hour=15, minute=5, tzinfo=timezone("Asia/Shanghai")),
+                     datetime.time(hour=16, minute=0, tzinfo=timezone("Asia/Shanghai")),
+                     datetime.time(hour=16, minute=55, tzinfo=timezone("Asia/Shanghai")),
+                     datetime.time(hour=18, minute=0, tzinfo=timezone("Asia/Shanghai")),
+                     datetime.time(hour=18, minute=55, tzinfo=timezone("Asia/Shanghai")),
+                     datetime.time(hour=19, minute=50, tzinfo=timezone("Asia/Shanghai")))
 
 
 class Course:
-    __course_time_table = (datetime.time(8, 00, tzinfo=pytz.timezone("Asia/Shanghai")),
-                           datetime.time(8, 55, tzinfo=pytz.timezone("Asia/Shanghai")),
-                           datetime.time(10, 00, tzinfo=pytz.timezone("Asia/Shanghai")),
-                           datetime.time(10, 55, tzinfo=pytz.timezone("Asia/Shanghai")),
-                           datetime.time(12, 10, tzinfo=pytz.timezone("Asia/Shanghai")),
-                           datetime.time(13, 05, tzinfo=pytz.timezone("Asia/Shanghai")),
-                           datetime.time(14, 10, tzinfo=pytz.timezone("Asia/Shanghai")),
-                           datetime.time(15, 05, tzinfo=pytz.timezone("Asia/Shanghai")),
-                           datetime.time(16, 00, tzinfo=pytz.timezone("Asia/Shanghai")),
-                           datetime.time(16, 55, tzinfo=pytz.timezone("Asia/Shanghai")),
-                           datetime.time(18, 00, tzinfo=pytz.timezone("Asia/Shanghai")),
-                           datetime.time(18, 55, tzinfo=pytz.timezone("Asia/Shanghai")),
-                           datetime.time(19, 50, tzinfo=pytz.timezone("Asia/Shanghai")))
 
     def __init__(self, name, occur_time_str, teacher, course_id, credit, location, office_time_str, office):
         self.name = name
@@ -64,7 +66,7 @@ class Course:
 
             occur_index = []
             for i in range(start_index, end_index + 1):
-                course_index = self.__course_time_table[i]
+                course_index = course_time_table[i]
                 occur_index.append(datetime.datetime.combine(weekday, course_index))
             occur_indexes.append(occur_index)
 
@@ -115,7 +117,6 @@ class SHUScheduleGenerator:
 
         self.__base_url = 'http://xk.autoisp.shu.edu.cn:8080'
 
-        # Convert Chinese number to weekday represented by date.
         monday = datetime.datetime.strptime(begin_date_str, '%Y.%m.%d').date()
         tuesday = monday + datetime.timedelta(1)
         wednesday = tuesday + datetime.timedelta(1)
@@ -124,7 +125,7 @@ class SHUScheduleGenerator:
         self.__weekday_table = {'一': monday, '二': tuesday, '三': wednesday, '四': thursday, '五': friday}
 
         # Create a opener with the ability to record cookies.
-        self.__opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.CookieJar()))
+        self.__opener = build_opener(HTTPCookieProcessor(CookieJar()))
 
         self.__validate_img_path = os.path.join(os.getcwd(), "validate_code.jpg")
 
@@ -142,18 +143,18 @@ class SHUScheduleGenerator:
     def delete_validate_code_file(self):
         os.remove(self.__validate_img_path)
 
-    def auth(self, student_id, password, validate_code):
-        login_data = urllib.urlencode({"txtUserName": student_id, "txtPassword": password, "txtValiCode": validate_code})
+    def auth(self, student_id, student_password, validate_code):
+        login_data = urlencode({"txtUserName": student_id, "txtPassword": student_password, "txtValiCode": validate_code}).encode("utf-8")
         self.__opener.open(self.__base_url, login_data)
 
     def generate(self, student_id):
         # This is the URL where the source of schedule come from.
         course_table_url = self.__base_url + '/StudentQuery/CtrlViewQueryCourseTable'
         # Create the request to get the raw data of schedule.
-        request = urllib2.Request(course_table_url, urllib.urlencode({"studentNo": student_id}))
+        request = Request(course_table_url, urlencode({"studentNo": student_id}).encode("utf-8"))
 
         # Get and return the raw data.
-        data = self.__opener.open(request).read()
+        data = self.__opener.open(request).read().decode("utf-8")
 
         # First extract data from HTML.
         initial_data = re.findall(r"<tr>(.+?)</tr>", data, re.S)
@@ -196,31 +197,31 @@ class SHUScheduleGenerator:
 
 
 # -------- Program Interface ------------------
-print u"""#---------------------------------------
+print(u"""#---------------------------------------
 #   Program:  SHUCourseSchedule
 #   Version:  3.0
 #   Author:   Jerome Tan
 #   Date:     2017.3.26
 #   Language: Python 2.7
 #---------------------------------------
-"""
+""")
 
 # starting_date is the date of the first of day in the term.
-print """Please enter the starting date of your courses according to the following format:
-yyyy.mm.dd"""
-begin_date_str = raw_input("Starting Date: ")
+print("""Please enter the starting date of your courses according to the following format:
+yyyy.mm.dd""")
+begin_date = input("Starting Date: ")
 
-generator = SHUScheduleGenerator(begin_date_str=begin_date_str)
+generator = SHUScheduleGenerator(begin_date_str=begin_date)
 
-print "Please enter your student ID and your password"
-student_id = raw_input("Student ID: ")
+print("Please enter your student ID and your password")
+identifier = input("Student ID: ")
 password = getpass.getpass("Password: ")
 
 generator.fetch_validate_code()
 
-print "Please enter the validate code"
-validate_code = raw_input("Validate code: ")
+print("Please enter the validate code")
+code = input("Validate code: ")
 
-generator.auth(student_id, password, validate_code)
-generator.generate(student_id)
+generator.auth(identifier, password, code)
+generator.generate(identifier)
 generator.delete_validate_code_file()
