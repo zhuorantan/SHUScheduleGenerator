@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import getpass
 import sys
 from generator import Generator

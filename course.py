@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import re
 from datetime import datetime, timedelta
 
@@ -80,6 +81,7 @@ class Course:
                 event.add(name='summary', value=self.name)
                 event.add(name='dtstart', value=occur_time + timedelta(weeks=occur_weeks[0] - 1))
                 event.add(name='duration', value=timedelta(minutes=45))
+                event.add(name='dtend', value=occur_time + timedelta(weeks=occur_weeks[0] - 1, minutes=45))
                 event.add(name='location', value=self.location)
                 event.add(name='description', value=self.description)
 
