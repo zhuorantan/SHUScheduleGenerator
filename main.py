@@ -1,15 +1,22 @@
 import getpass
+import sys
 from generator import Generator
-
 
 print(u"""#---------------------------------------
 #   Program:  SHUScheduleGenerator
-#   Version:  3.0
-#   Author:   Jerome
-#   Date:     2017.4.4
-#   Language: Python 3.6
+#   Version:  3.1
+#   Author:   Jerome & kmahyyg
+#   Date:     2018.8.10
+#   Language: Python 3.7
 #---------------------------------------
 """)
+
+if sys.version_info[0] < 3:
+    raise Exception("Must be using Python 3.6+")
+elif sys.version_info[1] < 6:
+    raise Exception("Must be using Python 3.6+")
+else:
+    pass
 
 # starting_date is the date of the first of day in the term.
 print("Entry the starting date of your courses in the following format:\nyyyy.mm.dd")
@@ -23,7 +30,7 @@ for index, term in enumerate(generator.get_terms()):
 
 term_index = int(input("Term: ")) - 1
 generator.term_index = term_index
-print(generator.term_index)
+# print(generator.term_index)
 
 print("Enter student ID and password")
 student_id = input("Student ID: ")

@@ -1,12 +1,25 @@
 import os
 import re
-from urllib.request import build_opener, HTTPCookieProcessor, Request
-from urllib.parse import urlencode
-from http.cookiejar import CookieJar
+import subprocess
+import sys
 from datetime import datetime, timedelta, time
-from pytz import timezone
+from http.cookiejar import CookieJar
+from urllib.parse import urlencode
+from urllib.request import build_opener, HTTPCookieProcessor, Request
+
 from icalendar import Calendar
+from pytz import timezone
+
 from course import Course
+
+
+def cros_platopen(filepath):
+    if sys.platform.startswith('darwin'):
+        subprocess.call(('open', filepath))
+    elif os.name == 'nt':
+        os.startfile(filepath)  # IDE will notice u that os.py under Linux doesn't have this function support.
+    elif os.name == 'posix':
+        subprocess.call(('xdg-open', filepath))
 
 
 class Generator:
@@ -69,7 +82,7 @@ class Generator:
 
         print("Validate image saved to %s" % self.__validate_img_path)
 
-        os.system("open \'%s\'" % self.__validate_img_path)
+        cros_platopen(self.__validate_img_path)
 
     def delete_validate_code_file(self):
         os.remove(path=self.__validate_img_path)
@@ -118,7 +131,7 @@ class Generator:
         cal = Calendar()
         cal.add("calscale", "GREGORIAN")
         cal.add("version", "2.0")
-        cal.add("X-WR-CALNAME", "Course Schedule")
+        cal.add("X-WR-CALNAME", "SHU Course Schedule")
         cal.add("X-WR-TIMEZONE", "Asia/Shanghai")
 
         for event in events:
@@ -128,4 +141,4 @@ class Generator:
         f = open(cal_path, "wb")
         f.write(cal.to_ical())
         f.close()
-        os.system('open \'' + cal_path + '\'')
+        cros_platopen(cal_path)

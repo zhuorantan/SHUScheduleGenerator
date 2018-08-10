@@ -12,7 +12,7 @@ If you just want to use the SHUScheduleGenerator, you can download SHUScheduleGe
 
 ## Environment
 
-[Python](https://www.python.org) 2.7 installation is required. Tested in Python 2.7.11.
+[Python](https://www.python.org) 3.6+ installation is required. Tested in Python 3.7.0.
 
 Install icalendar and pytz packages.
 
@@ -24,45 +24,7 @@ If you haven't installed pip, you can follow the guide [here](https://pip.pypa.i
 
 ## Usage
 
-Enter the directory containing SHUScheduleGenerator in Terminal(OS X), shell(Linux) or cmd(Windows)
-
-``` sh
-cd SHUScheduleGenerator
-```
-
-run SHUScheduleGenerator.py
-
-``` sh
-python SHUScheduleGenerator.py
-```
-
-Entry the date of the first day of the term. For example, the first day of autumn term in year 2015 is August 31, so you entry `2015.08.31` and press Enter
-
-``` sh
-Starting Date: 2015.08.31
-```
-
-Entry the directory where you receive validate code image and result .ics file. For example, if you are using OS X, you can entry `/Users/YourUserName/Desktop` which set the directory to your desktop
-
-``` sh
-Directory: /Users/YourUserName/Desktop
-```
-
-Entry your student ID and password
-
-``` sh
-student ID: xxxxxxxx
-password:
-```
-
-student ID is the ID of every student in Shanghai University.
-Note: when you entry the password, the password won't display on screen. Don't worry, just keep typing.
-
-At this time, a image named `Validate Code Image.jpg` will appear in the directory you entried earier. You need to recognize it and type it in.
-
-``` sh
-Please enter validate code: a1b2
-```
+Click the link for more information: [link](https://www.kmahyyg.xyz/2018/SHU2ICS-Tutorial/)
 
 That's all. After a while, a file named Course Schedule.ics will be put into the directory you provided.
 

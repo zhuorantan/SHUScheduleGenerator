@@ -1,6 +1,7 @@
 import re
-from icalendar import Event, Alarm
 from datetime import datetime, timedelta
+
+from icalendar import Event, Alarm
 
 
 class Course:
@@ -12,8 +13,8 @@ class Course:
         self.location = location
         self.description = "Teacher: " + teacher + \
                            "\nCourse ID: " + course_id + \
-                           "\nCredit: " + credit +\
-                           "\nOffice Time: " + office_time_str +\
+                           "\nCredit: " + credit + \
+                           "\nOffice Time: " + office_time_str + \
                            "\nOffice: " + office
 
         print("Course %s initialized: occur time: %s, location: %s, description: %s"
@@ -61,7 +62,7 @@ class Course:
         # Create a alarm which will notify user 20 minutes before the occur time.
         alarm = Alarm()
         alarm.add(name='action', value='DISPLAY')
-        alarm.add(name='trigger', value=timedelta(minutes=-20))
+        alarm.add(name='trigger', value=timedelta(minutes=-25))
         alarm.add(name='description', value='Event reminder')
 
         occur_weeks = self.__get_occur_weeks()
